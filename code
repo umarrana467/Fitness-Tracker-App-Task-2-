@@ -1,0 +1,157 @@
+flutter create fitness_tracker
+cd fitness_tracker
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.0
+  charts_flutter: ^0.12.0
+  http: ^0.14.0
+import 'package:flutter/material.dart';
+import 'package:fitness_tracker/screens/home_screen.dart';
+
+void main() {
+  runApp(FitnessTrackerApp());
+}
+
+class FitnessTrackerApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Fitness Tracker',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: HomeScreen(),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:fitness_tracker/widgets/step_counter.dart';
+import 'package:fitness_tracker/widgets/fitness_chart.dart';
+
+class HomeScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Fitness Tracker'),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          StepCounter(),
+          SizedBox(height: 20),
+          FitnessChart(),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:fitness_tracker/providers/step_provider.dart';
+
+class StepCounter extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final stepProvider = Provider.of<StepProvider>(context);
+    return Card(
+      margin: EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(
+              'Steps Today',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text(
+              '${stepProvider.steps}',
+              style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: stepProvider.incrementSteps,
+              child: Text('Increment Steps'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:provider/provider.dart';
+import 'package:fitness_tracker/providers/step_provider.dart';
+
+class FitnessChart extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final stepProvider = Provider.of<StepProvider>(context);
+    List<charts.Series<int, String>> series = [
+      charts.Series(
+        id: 'Steps',
+        data: stepProvider.weeklySteps,
+        domainFn: (int steps, int index) => stepProvider.daysOfWeek[index],
+        measureFn: (int steps, _) => steps,
+      ),
+    ];
+
+    return Container(
+      height: 200,
+      padding: EdgeInsets.all(16),
+      child: charts.BarChart(
+        series,
+        animate: true,
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+
+class StepProvider with ChangeNotifier {
+  int _steps = 0;
+  List<int> _weeklySteps = List.generate(7, (index) => 0);
+  List<String> _daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  int get steps => _steps;
+  List<int> get weeklySteps => _weeklySteps;
+  List<String> get daysOfWeek => _daysOfWeek;
+
+  void incrementSteps() {
+    _steps++;
+    notifyListeners();
+  }
+
+  void updateWeeklySteps(int dayIndex, int steps) {
+    _weeklySteps[dayIndex] = steps;
+    notifyListeners();
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:fitness_tracker/screens/home_screen.dart';
+import 'package:fitness_tracker/providers/step_provider.dart';
+
+void main() {
+  runApp(FitnessTrackerApp());
+}
+
+class FitnessTrackerApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => StepProvider(),
+      child: MaterialApp(
+        title: 'Fitness Tracker',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: HomeScreen(),
+      ),
+    );
+  }
+}
+flutter run
